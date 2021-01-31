@@ -164,6 +164,38 @@ desmontamos las particiones y reiniciamos el sistema.
 umount -R /mnt
 reboot
 
+25.- Una vez tenemos el sistema arrancado por primera vez accedemos con el usuario root, para preparar un par de opciones.
+
+Le permitimos que al usuario que hemos creado anteriormente pueda ejecutar comandos de root. Modificamos el fichero /etc/sudoers
+
+nano /etc/sudoers
+
+Buscamos la linea:
+root ALL=(ALL) ALL
+
+y añadimos:
+
+nombre_usuario ALL=(ALL) ALL
+
+grabamos y salimos. Sino queremos que ese usuario tenga que poner la password para ejecutar los comandos de root, añadimos al final NOPASSWD:ALL
+Quedando de este forma:
+
+nombre_usuario ALL=(ALL) ALL NOPASSWD:ALL
+
+26.- Ahora vemos que no tenemos conexion a internet, haciendo un ping a google, porque no tenemos habilitado el servidio de red.
+
+systemctl enable NetworkManager.service
+
+y lo iniciamos:
+
+systemctl start NetworkManager.service
+
+27.- Ahora nos logueamos con el usuario creado, para no usar root y actualizamos el sistema:
+
+sudo pacman -Syyu
+
+
+
 En el segundo paso veremos como instalar un sistema grafico o X-windows (usando el entorno de escritorio XFCe que es el que menos recursos consume).
 
 
