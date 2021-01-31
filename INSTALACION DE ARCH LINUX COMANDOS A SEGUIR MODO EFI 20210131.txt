@@ -1,0 +1,172 @@
+1.- loadkeys es
+
+2.- ip add // para ver la IP que tenemos por DHCP
+
+3.- ping www.google.es -> asi comprobamos que tenemos conexion a internet
+
+4.- timedatectl status -> vemos la hora actual del sistema por si hay que modificarla para que este sincronizada
+Puede que aparezca en la opcion System clock synchronized: NO
+5.- timedatectl set-ntp true -> activamos la sincronizacion de la hora
+
+6.- Para en principio saber si tenemos el equipo en modo UEFI o BIOS, con el siguiente comando:
+
+ls /sys/firmware/efi/efivars/
+
+Si aparece un listado de ficheros, tenemos UEFI activado. En caso de que estuviera en forma BIOS, no apareceria ningun fichero.
+
+7.- Tenemos que particionar el disco para poder instalar el sistema. Para ver que nombre le ha dado a nuestro disco duro que vamos a particionar ponemos el comando:
+
+fdisk -l
+
+Comprobamos cual es el que tiene el tamaño que le hemos dado, pueden aparecer varios como:
+
+/dev/sda
+/dev/sdb
+...
+
+8.- En nuestro caso vamos a usar /dev/sda. Usamos cfdisk para particionar el disco, que usa de forma grafica y mas sencilla el particionado de los discos. En vez de fdisk. Al ser un arranque en EFI, hay que hacer una particion GPT. Si fuera modo BIOS, habria que elegir modo MSDOS.
+
+En nuestro disco vamos a crear particiones normales, no modo :
+
+Y vamos a crear 3 particiones:
+
+1.- Una de arranque en modo fat32
+2.- Una de swap (o intercambio) que suele ser el doble de la memoria RAM del equipo.
+3.- Una particion / -> general donde va el sistema
+4.- Una particion /home -> donde van a ir los documentos de los usuarios. Esta pariticion se puede obviar y dejar sin separar la particion raiz de la de los usuarios.
+
+
+New -> Particion size -> 1GB -> EFI System -> write
+New -> particion size -> 8Gb -> Linux Swap
+New -> Partition size -> 40% de lo que nos quede del disco duro -> Linux Filesustem
+New -> Partition size -> el resto del disco duro -> Linux Home. (esta particion se puede obviar si queremos que todo este en la misma particion. Con lo que la anterior en vez de elegir un 40% del disco duro que nos quede, ponemos todo el resto.
+
+Grabamos con la opcion write y continuamos.
+
+9.- Vamos a ver que las particiones se han creado correctamente.
+
+fdisk -l
+
+10.- Formateo de las particiones.
+
+10.1.0.- La primera particion que es la booteable la tenemos que formatear en modo FAT32.
+mkfs.vfat -F32 /dev/sda1
+
+10.2.0.- Las particiones 3 y 4, que pertenecen al sistema de ficheros y la particion home, las formateamos en el sistema de ficheros ext4.
+
+mkfs.ext4 /dev/sda3
+mkfs.ext4 /dev/sda4
+
+10.3.0.- La particion SWAP, creamos su sistema de ficheros
+
+mkswap /dev/sda2
+
+y luego la activamos:
+
+swapon /dev/sda2
+
+11.- Ahora hay que montar las particiones creadas sobre /mnt que es donde estara el sitema de ficheros donde vamos a instalar.
+
+Empezamos con la particion raiz / (recordamos que sda1 es la que bootea el sistema, la sda2 -> es la swap, sda3 -> raiz del sistema, sda4 -> home)
+
+mount /dev/sda3 /mnt
+
+Creamos la particion home y boot dentro de mnt, para el sistema.
+
+mkdir /mnt/home
+mkdir -p /mnt/boot/efi
+
+montamos las particiones que nos quedan sobre dichos directorios:
+
+mount /dev/sda1 /mnt/boot/efi
+mount /dev/sda4 /mnt/home
+
+12.- Procedemos a instalar el sistema usando pacstrap sobre la particion /mnt
+
+pacstrap /mnt base base-devel efibootmgr networkmanager grub gvfs xdg-user-dirs linux linux-firmware nano dhcpd
+
+Si lo estuvieramos haciendo sobre un portatil, habria que añadir:
+
+pacstrap /mnt netctl-wpa_supplicant dialog
+pacstrap /mnt xf86-input-synaptics
+
+
+13.- Generamos la tabla de particiones:
+
+genfstab -pU /mnt >> /mnt/etc/fstab
+
+14.- Ahora accedemos al sistema base instalado en nuestro equipo:
+
+arch-chroot /mnt
+
+Si hacemos un comando ls veremos todas las carpetas de nuestro sistema istaladas.
+
+15.- Le damos un nombre al equipo, editamos el fichero:
+nano /etc/hostname
+
+y escribimos el nombre que queremos, en nuestro caso: arrakis
+
+16.- Establecemos la zona horaria, creando un enlace simbolico desde la ruta donde esta la informacion de las zonas a localtime.
+
+ln -s /usr/share/zoneinfo/Europe/Atlantic/Canary /etc/localtime
+
+
+17.- Configuramos el idioma del sistema:
+
+nano /etc/locale.gen
+
+buscamos el que ponga #es_ES.UTF-8 UTF-8 y quitamos la almohadilla. #
+
+Modificamos con el siguiente comando la localizacion del sistema:
+echo LANG=es_ES.UTF8 > /etc/locale.conf
+
+Y con el siguiente comando generamos el fichero de configuracion:
+
+locale-gen
+
+18.- De forma permanente establecemos el teclado en español.
+
+echo KEYMAP=es > /etc/vconsole.conf
+
+
+19.- Ahora instalamos el sistema de arranque GRUB.
+grub-install --efi-directory=/boot/efi --botloader-id=GRUB --target=x86_64-efi --removable
+
+OJO con removable que borra cualquier sistema de arranque que existiera en el equipo. 
+
+20.- Actualizar la configuracion de grub:
+
+grub-mkconfig -o /boot/grub/grub.cfg
+
+
+21.- cambiamos la password del usuario root con el siguiente comando:
+
+passwd
+
+22.- creamos un usuario para el sistema:( el -m crea su directorio home, -s indica que va a usar bash como sistema, se puede dejar sin la opcion -s)
+
+useradd -m -s /bin/bash nombre_usuario
+
+23.- y le creamos una password de acceso al sistema:
+
+password nombre_usuario
+
+24.- procedemos a ejecutar el comando exit
+desmontamos las particiones y reiniciamos el sistema.
+
+umount -R /mnt
+reboot
+
+En el segundo paso veremos como instalar un sistema grafico o X-windows (usando el entorno de escritorio XFCe que es el que menos recursos consume).
+
+
+
+
+
+
+
+
+
+
+
+
