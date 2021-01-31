@@ -1,4 +1,11 @@
-1.- loadkeys es
+Este proceso, ha sido creado sobre una maquina virtual con Virtual Box, en modo EFI.
+Una vez arrancada la ISO que nos hemos descargado desde la pagina oficial ed archLinux.
+
+https://archlinux.org/
+
+=========== Pasos a seguir una vez estemos en el terminal de instalacion ==========
+
+1.- loadkeys es -> cargamos el teclado en español.
 
 2.- ip add // para ver la IP que tenemos por DHCP
 
