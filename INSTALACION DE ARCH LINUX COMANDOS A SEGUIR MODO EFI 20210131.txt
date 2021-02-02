@@ -1,18 +1,27 @@
-Este proceso, ha sido creado sobre una maquina virtual con Virtual Box, en modo EFI.
-Una vez arrancada la ISO que nos hemos descargado desde la pagina oficial ed archLinux.
-
-https://archlinux.org/
-
-=========== Pasos a seguir una vez estemos en el terminal de instalacion ==========
-
-1.- loadkeys es -> cargamos el teclado en español.
+1.- loadkeys es
 
 2.- ip add // para ver la IP que tenemos por DHCP
+=====================================================================================================================
+Sino hubiera ningun servidor DHCP en nuestra red: con el segundo comando (ip add) vemos que nombre tiene nuestra tarjeta de red, en nuestro ejemplo se llama enp0s3.
+Teniendo en cuenta que el rango de IP de nuestra red es: 192.168.0.0/24 (mascara de red 255.255.255.0). Los comandos serian:
+
+Asignar manualmente la direccion IP y la puerta de enlace.
+ip addr add <IP address>/<subnet mask> dev <interface>
+Por ejemplo:
+ip addr add 192.168.0.50/24 dev enp0s3
+
+Para la puerta de enlace:
+ip route add default via <dirección IP gateway predeterminada>
+Por ejemplo:
+ip route add default via 192.168.0.1
+=======================================================================================================================
 
 3.- ping www.google.es -> asi comprobamos que tenemos conexion a internet
 
+
 4.- timedatectl status -> vemos la hora actual del sistema por si hay que modificarla para que este sincronizada
 Puede que aparezca en la opcion System clock synchronized: NO
+
 5.- timedatectl set-ntp true -> activamos la sincronizacion de la hora
 
 6.- Para en principio saber si tenemos el equipo en modo UEFI o BIOS, con el siguiente comando:
@@ -31,9 +40,9 @@ Comprobamos cual es el que tiene el tamaño que le hemos dado, pueden aparecer v
 /dev/sdb
 ...
 
-8.- En nuestro caso vamos a usar /dev/sda. Usamos cfdisk para particionar el disco, que usa de forma grafica y mas sencilla el particionado de los discos. En vez de fdisk. Al ser un arranque en EFI, hay que hacer una particion GPT. Si fuera modo BIOS, habria que elegir modo MSDOS.
+8.- En nuestro caso vamos a usar /dev/sda. Usamos cfdisk para particionar el disco, que usa de forma grafica y mas sencilla el particionado de los discos. En vez de fdisk. Al ser un arranque en EFI, hay que hacer una particion GPT. Si fuera modo BIOS, habria que elegir modo DOS.
 
-En nuestro disco vamos a crear particiones normales, no modo :
+En nuestro disco vamos a crear particiones normales, no en modo LVM :
 
 Y vamos a crear 3 particiones:
 
@@ -43,9 +52,9 @@ Y vamos a crear 3 particiones:
 4.- Una particion /home -> donde van a ir los documentos de los usuarios. Esta pariticion se puede obviar y dejar sin separar la particion raiz de la de los usuarios.
 
 
-New -> Particion size -> 1GB -> EFI System -> write
+New -> Particion size -> 1GB -> EFI System -> write (si fuera BIOS habria que elegir BIOS BOOT,o sino aparece W95 FAT32. En las opciones inferiores elegir BOOT. Los tipos de partcion pueden ser 4 PRIMARIAS ó 3 PRimarias y 4 extendidas.).
 New -> particion size -> 8Gb -> Linux Swap
-New -> Partition size -> 40% de lo que nos quede del disco duro -> Linux Filesustem
+New -> Partition size -> 40% de lo que nos quede del disco duro -> Linux Filesystem
 New -> Partition size -> el resto del disco duro -> Linux Home. (esta particion se puede obviar si queremos que todo este en la misma particion. Con lo que la anterior en vez de elegir un 40% del disco duro que nos quede, ponemos todo el resto.
 
 Grabamos con la opcion write y continuamos.
@@ -78,19 +87,36 @@ Empezamos con la particion raiz / (recordamos que sda1 es la que bootea el siste
 
 mount /dev/sda3 /mnt
 
-Creamos la particion home y boot dentro de mnt, para el sistema.
+Creamos la particion home y boot dentro de mnt, para el sistema UEFI.
 
 mkdir /mnt/home
 mkdir -p /mnt/boot/efi
 
-montamos las particiones que nos quedan sobre dichos directorios:
+===================
+para el modo BIOS:
+mkdir /mnt/home
+mkdir /mnt/boot/
+====================
+montamos las particiones que nos quedan sobre dichos directorios en modo EFI:
 
 mount /dev/sda1 /mnt/boot/efi
 mount /dev/sda4 /mnt/home
 
+===========================
+Para modo BIOS
+mount /dev/sda1 /mnt/boot
+mount /dev/sda4 /mnt/home
+===========================
+
 12.- Procedemos a instalar el sistema usando pacstrap sobre la particion /mnt
 
-pacstrap /mnt base base-devel efibootmgr networkmanager grub gvfs xdg-user-dirs linux linux-firmware nano dhcpd
+pacstrap /mnt base base-devel efibootmgr networkmanager grub gvfs xdg-user-dirs linux linux-firmware nano dhcp
+
+
+===========================================================================================================================================
+PARA BIOS:
+pacstrap /mnt base base-devel grub os-prober ntfs-3g networkmanager gvfs gvfs-afc gvfs-mtp xdg-user-dirs linux linux-firmware nano dhcp
+===========================================================================================================================================
 
 Si lo estuvieramos haciendo sobre un portatil, habria que añadir:
 
@@ -115,7 +141,7 @@ y escribimos el nombre que queremos, en nuestro caso: arrakis
 
 16.- Establecemos la zona horaria, creando un enlace simbolico desde la ruta donde esta la informacion de las zonas a localtime.
 
-ln -s /usr/share/zoneinfo/Europe/Atlantic/Canary /etc/localtime
+ln -s /usr/share/zoneinfo/Atlantic/Canary /etc/localtime
 
 
 17.- Configuramos el idioma del sistema:
@@ -139,6 +165,11 @@ echo KEYMAP=es > /etc/vconsole.conf
 19.- Ahora instalamos el sistema de arranque GRUB.
 grub-install --efi-directory=/boot/efi --botloader-id=GRUB --target=x86_64-efi --removable
 
+===================================================================
+MODO BIOS:
+grub-install /dev/sda (sda corresponde al nombre de tu disco)
+
+====================================================================
 OJO con removable que borra cualquier sistema de arranque que existiera en el equipo. 
 
 20.- Actualizar la configuracion de grub:
@@ -182,6 +213,11 @@ Quedando de este forma:
 
 nombre_usuario ALL=(ALL) ALL NOPASSWD:ALL
 
+25.1.0.- Si vemos que el teclado en español no se ha quedado guardado, modificamos el fichero: /etc/vconsole.conf
+y ponemos
+
+KEYMAP=es
+
 26.- Ahora vemos que no tenemos conexion a internet, haciendo un ping a google, porque no tenemos habilitado el servidio de red.
 
 systemctl enable NetworkManager.service
@@ -194,9 +230,6 @@ systemctl start NetworkManager.service
 
 sudo pacman -Syyu
 
-
-
-En el segundo paso veremos como instalar un sistema grafico o X-windows (usando el entorno de escritorio XFCe que es el que menos recursos consume).
 
 
 
