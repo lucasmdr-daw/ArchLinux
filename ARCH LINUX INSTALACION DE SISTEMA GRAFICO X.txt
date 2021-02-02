@@ -1,0 +1,122 @@
+INSTALACION DEL ENTORNO GRAFICO:
+
+1.- Tenemos que instalar el servidor grafico y el conjunto de software para el procesamiento grafico MESA.
+
+sudo pacman -S xorg-server xorg-xinit mesa mesa-demos
+
+2.- Ahora podemos instalar nuestro entorno grafico a eleccion del usuario:
+
+Para nuestro ejemplo vamos a usar XFCE:
+sudo pacman -S xfce4 xfce4-goodies network-manager-applet pulseaudio
+
+Si queremos KDE:
+sudo pacman -S plasma-desktop plasma-meta plasma-wayland-session
+
+Para Gnome:
+sudo pacman -S gnome gnome-extra
+
+Para Deepin:
+sudo pacman -S deepin
+
+Para Cinnamon:
+
+sudo pacman -S cinnamon
+
+Para LXDE:
+sudo pacman -S lxde
+
+Lo ideal es elegir un entorno grafico y no añadir varios, para que el sistema no se vuelva "inestable".
+
+3.- Configuramos el inicio manual del entorno grafico, para que en el caso de que falle de manera automatica, podamos ejecutarlo desde el terminalk.
+
+Editamos el fichero:
+
+/home/nombre_usuario/.xinitrc
+
+Y añadimos:
+
+exec startxfce4 -> o el nombre del entorno grafico que hemos instalado.
+exec startplasma-x11 -> Para KDE
+
+
+4.- Instalamos e iniciamos el Gestor de Inicio de sesion en modo grafico (en este caso usamos LXDM, pero hay varios como SSDM), en vez de que aparezca primero el terminal y luego el entorno grafico:
+
+sudo pacman -S lxdm
+sudo systemctl enable lxdm
+
+5.- Y reiniciamos el sistema:
+
+reboot
+
+6.- Si en algun entorno grafico como KDE vemos que no tenemos instalado algun terminal, podemos acceder al mismo presionando CTRL+Alt+F2 y ejecutar comandos, por ejemplo:
+sudo pacman -S konsole
+
+7.- File Manager en KDE:
+sudo pacman -S dolphin
+
+8.- Instalacion de los headers kernels:
+sudo pacman -S linux-headers
+
+9.- Montar el virtual-guest cd, para la instalacion de las caracteristicas de vbox. Y ejecutar:
+sudo ./VBoxLinuxAdittions.run
+
+10.- Instalar GIT
+sudo pacman -S git
+
+11 .- Instalacion de teclado en español en Xorg:
+Editar el fichero:
+
+sudo nano /etc/X11/xorg.conf.d/10-keyboard.conf
+
+Dentro del archivo añadimos:
+
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout"  "es" 
+        Option "XkbModel"   "pc104"
+        Option "XkbVariant" "deadtilde,dvorak"
+        Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+
+Y modificar el layout en la configuracion del sistema directamente en las Xwindows.
+
+12.- Como instalar paquetes del repositorio AUR (Arch User Repository).
+Vamos a usar un gestor de paquetes AUR en este caso PARU, pero se puede usar octopi, yay... y en modo grafico PAMAC.
+
+https://aur.archlinux.org/packages/paru/
+
+hacemos un:
+
+git clone https://aur.archlinux.org/paru.git
+
+Entramos en el directorio y ejecutamos:
+makepkg -si
+
+Se instalara de manera automatica. Y al final nos dice que faltan algunas dependencias como asp bat
+Las instalamos mediante:
+
+sudo pacman -S asp bat
+
+Ya podemos instalar paquetes desde el repositorio AUR usando paru.
+para usarlo solo ponemos:
+
+paru nombre_del_paquete
+
+Y nos sale un listado con las coincidencias, a no ser que sepamos exactamente el nombde del paquete buscando en el repositorio de AUR.
+
+paru firefox
+
+Si se sale de la pantalla el listado podemos usar:
+paru firefox | more
+
+paru java jre
+paru java jdk
+paru netbeans
+
+
+.- RECORDAR QUE PARA ACTUALIZAR EL SISTEMA, AUNQUE ES UNA VERSION ROLLING RELEASE (siempre se esta actualizando) el comando es:
+
+sudo pacman -Syu
+
+
