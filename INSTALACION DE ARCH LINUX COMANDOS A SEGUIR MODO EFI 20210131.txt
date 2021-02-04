@@ -120,7 +120,7 @@ pacstrap /mnt base base-devel grub os-prober ntfs-3g networkmanager gvfs gvfs-af
 
 Si lo estuvieramos haciendo sobre un portatil, habria que añadir:
 
-pacstrap /mnt netctl-wpa_supplicant dialog
+pacstrap /mnt netctl wpa_supplicant dialog
 pacstrap /mnt xf86-input-synaptics
 
 
